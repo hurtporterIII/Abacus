@@ -49,6 +49,15 @@ export function createTrainingMode({
 
   function start() {
     lesson = pickLesson();
+    if (!lesson) {
+      console.warn("[training] no lessons available; locking training mode");
+      if (baseAbacusConfig) {
+        abacus.configure(baseAbacusConfig);
+        abacus.setValue(0);
+      }
+      ui.setObjective("Training unavailable");
+      return;
+    }
     console.info(`[training:${lesson?.id}] start`);
     setLesson(lesson.id);
     stepIndex = 0;

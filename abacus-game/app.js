@@ -124,9 +124,9 @@ function capitalize(value) {
 // Dev helpers to unlock other modes or speeds via the console.
 window.abacusApp = {
   unlockAll: () => {
-    unlockMode("practice");
-    unlockMode("challenge");
-    unlockSpeedTier("slow");
+    unlockMode("practice", { persist: false });
+    unlockMode("challenge", { persist: false });
+    unlockSpeedTier("slow", { persist: false });
     updateUIState();
   },
   abacus,

@@ -1,3 +1,22 @@
+let activeBead = null;
+
+function installGlobalGuards() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  const cancelActive = () => {
+    if (activeBead) {
+      activeBead.finishDrag({ cancelled: true });
+    }
+  };
+  window.addEventListener("blur", cancelActive);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      cancelActive();
+    }
+  });
+}
+
+installGlobalGuards();
+
 export class Bead {
   constructor({ value, type, onChange }) {
     this.value = value;
@@ -9,7 +28,9 @@ export class Bead {
     this.el.className = "bead";
     this._pointerMove = this.handlePointerMove.bind(this);
     this._pointerUp = this.handlePointerUp.bind(this);
+    this._pointerCancel = this.handlePointerCancel.bind(this);
     this.el.addEventListener("pointerdown", (e) => this.handlePointerDown(e));
+    this.el.addEventListener("pointercancel", this._pointerCancel);
   }
 
   attachTo(parent) {
@@ -33,9 +54,12 @@ export class Bead {
     event.preventDefault();
     this.startY = event.clientY;
     this.startTop = parseFloat(this.el.style.top || "0");
+    this.startPointerId = event.pointerId;
     this.el.setPointerCapture(event.pointerId);
     document.addEventListener("pointermove", this._pointerMove);
     document.addEventListener("pointerup", this._pointerUp);
+    document.addEventListener("pointercancel", this._pointerCancel);
+    activeBead = this;
   }
 
   handlePointerMove(event) {
@@ -49,9 +73,26 @@ export class Bead {
   }
 
   handlePointerUp(event) {
-    this.el.releasePointerCapture(event.pointerId);
+    this.finishDrag({ pointerId: event.pointerId });
+  }
+
+  handlePointerCancel(event) {
+    this.finishDrag({ pointerId: event.pointerId, cancelled: true });
+  }
+
+  finishDrag({ pointerId, cancelled = false } = {}) {
+    try {
+      if (this.startPointerId !== undefined) {
+        this.el.releasePointerCapture(this.startPointerId);
+      } else if (pointerId !== undefined) {
+        this.el.releasePointerCapture(pointerId);
+      }
+    } catch (_err) {
+      // Ignore capture release errors; safe fallback below.
+    }
     document.removeEventListener("pointermove", this._pointerMove);
     document.removeEventListener("pointerup", this._pointerUp);
+    document.removeEventListener("pointercancel", this._pointerCancel);
     const currentTop = parseFloat(this.el.style.top || "0");
     const distActive = Math.abs(currentTop - this.anchors.active);
     const distInactive = Math.abs(currentTop - this.anchors.inactive);
@@ -59,11 +100,20 @@ export class Bead {
     const changed = nextActive !== this.isActive;
     this.isActive = nextActive;
     this.snap(false);
-    if (changed && typeof this.onChange === "function") {
+    if (changed && typeof this.onChange === "function" && !cancelled) {
       this.onChange(this);
+    } else if (cancelled) {
+      // On cancellation, still notify if state changed to keep abacus value correct.
+      if (changed && typeof this.onChange === "function") {
+        this.onChange(this);
+      }
     }
     this.startY = undefined;
     this.startTop = undefined;
+    this.startPointerId = undefined;
+    if (activeBead === this) {
+      activeBead = null;
+    }
   }
 
   snap(emitChange = false) {

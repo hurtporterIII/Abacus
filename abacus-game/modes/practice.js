@@ -17,7 +17,7 @@ function pickPracticeLesson() {
       isLessonComplete(lesson.id)
   );
   if (eligible.length > 0) return eligible[0];
-  return trainingLessons[0] || null;
+  return null;
 }
 
 function uniqueTargets(sequence = []) {
@@ -55,17 +55,24 @@ export function createPracticeMode({ abacus, ui, baseAbacusConfig }) {
   function start() {
     lesson = pickPracticeLesson();
     if (!lesson) {
-      console.warn("[practice] no lessons available; falling back to base config");
+      console.warn("[practice] no completed lessons available; locking practice session");
       if (baseAbacusConfig) {
         abacus.configure(baseAbacusConfig);
+        abacus.setValue(0);
       }
-      ui.setObjective("Practice Mode");
+      ui.setObjective("Complete a training lesson to unlock practice");
       return;
     }
 
     targets = uniqueTargets(lesson.sequence);
     if (targets.length === 0) {
-      targets = [0];
+      console.warn(`[practice:${lesson.id}] lesson has no numeric targets; locking session`);
+      if (baseAbacusConfig) {
+        abacus.configure(baseAbacusConfig);
+        abacus.setValue(0);
+      }
+      ui.setObjective("Practice unavailable for this lesson");
+      return;
     }
 
     console.info(`[practice:${lesson.id}] start`);
