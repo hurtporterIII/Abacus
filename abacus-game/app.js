@@ -30,9 +30,14 @@ const ui = {
   }
 };
 
-function handleTrainingComplete() {
-  unlockMode("practice");
-  unlockSpeedTier("slow");
+function handleTrainingComplete(lesson) {
+  const unlocks = lesson?.unlocksOnComplete || {};
+  if (unlocks.practice) {
+    unlockMode("practice");
+  }
+  if (Array.isArray(unlocks.speeds)) {
+    unlocks.speeds.forEach((tier) => unlockSpeedTier(tier));
+  }
   updateUIState();
 }
 

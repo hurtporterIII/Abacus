@@ -1,5 +1,5 @@
 import { isLessonComplete, markLessonComplete, setLesson } from "../gameState.js";
-import { trainingLessons } from "../lessons.js";
+import { getEducationLessons } from "../lessons.js";
 
 export function createTrainingMode({
   abacus,
@@ -12,8 +12,9 @@ export function createTrainingMode({
   let lesson = null;
 
   function pickLesson() {
-    const next = trainingLessons.find((entry) => !isLessonComplete(entry.id));
-    return next || trainingLessons[0];
+    const lessons = getEducationLessons({ activeOnly: true });
+    const next = lessons.find((entry) => !isLessonComplete(entry.id));
+    return next || lessons[0];
   }
 
   function updateObjective() {

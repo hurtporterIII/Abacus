@@ -1,5 +1,5 @@
 import { isLessonComplete } from "../gameState.js";
-import { trainingLessons } from "../lessons.js";
+import { getEducationLessons } from "../lessons.js";
 
 function buildLessonName(lesson) {
   if (!lesson) return "Lesson";
@@ -10,7 +10,8 @@ function buildLessonName(lesson) {
 }
 
 function pickPracticeLesson() {
-  const eligible = trainingLessons.filter(
+  const lessons = getEducationLessons({ activeOnly: true });
+  const eligible = lessons.filter(
     (lesson) =>
       lesson.track === "education" &&
       lesson.mode === "training" &&
