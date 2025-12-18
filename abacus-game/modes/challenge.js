@@ -1,4 +1,4 @@
-export function createChallengeMode({ ui }) {
+export function createChallengeMode({ ui, abacus, baseAbacusConfig }) {
   let rafId = null;
   let frame = 0;
 
@@ -12,6 +12,10 @@ export function createChallengeMode({ ui }) {
 
   function start() {
     console.info("[challenge] start");
+    if (baseAbacusConfig && abacus) {
+      abacus.configure(baseAbacusConfig);
+      abacus.setValue(0);
+    }
     frame = 0;
     ui.setObjective("Survive incoming numbers (placeholder)");
     ui.setOverlayMessage("Challenge loop placeholder — falling numbers will live here.");

@@ -1,11 +1,14 @@
 import { Bead } from "./bead.js";
 
 export class Rod {
-  constructor(index, { onChange } = {}) {
+  constructor(index, { onChange, upperEnabled = true, lowerCount = 4 } = {}) {
     this.index = index;
     this.onChange = onChange;
+    this.upperEnabled = upperEnabled;
+    this.lowerCount = lowerCount;
     this.el = document.createElement("div");
     this.el.className = "rod";
+    this.applyHeight();
 
     this.upperZone = document.createElement("div");
     this.upperZone.className = "upper-zone";
@@ -22,7 +25,7 @@ export class Rod {
       type: "upper",
       onChange: () => this.handleBeadChange()
     });
-    this.lowerBeads = Array.from({ length: 4 }, () => {
+    this.lowerBeads = Array.from({ length: this.lowerCount }, () => {
       return new Bead({
         value: 1,
         type: "lower",
@@ -32,6 +35,19 @@ export class Rod {
 
     this.upperBead.attachTo(this.el);
     this.lowerBeads.forEach((bead) => bead.attachTo(this.el));
+
+    if (!this.upperEnabled) {
+      this.upperBead.el.style.pointerEvents = "none";
+      this.upperBead.el.style.opacity = "0.25";
+      this.upperBead.setActive(false);
+    }
+  }
+
+  applyHeight() {
+    const baseHeight = 200;
+    const extraBeads = Math.max(0, this.lowerCount - 4);
+    const extraHeight = extraBeads * 18; // compact spacing to keep rods visible with more beads
+    this.el.style.height = `${baseHeight + extraHeight}px`;
   }
 
   layout() {
@@ -49,8 +65,12 @@ export class Rod {
     this.upperBead.setAnchors({ active: upperActive, inactive: upperInactive });
 
     const lowerActive = beamRect.bottom - rodOffsetTop - beadHeight / 2;
-    const spacing = beadHeight + 6;
-    let cursor = lowerRect.bottom - rodOffsetTop - beadHeight;
+    const lowerTop = lowerRect.top - rodOffsetTop;
+    const lowerBottom = lowerRect.bottom - rodOffsetTop - beadHeight;
+    const available = Math.max(lowerBottom - lowerTop, 1);
+    const spacing =
+      this.lowerBeads.length > 1 ? available / (this.lowerBeads.length - 1) : 0;
+    let cursor = lowerBottom;
     this.lowerBeads.forEach((bead) => {
       bead.setAnchors({ active: lowerActive, inactive: cursor });
       cursor -= spacing;
@@ -59,20 +79,26 @@ export class Rod {
 
   getValue() {
     let value = 0;
-    if (this.upperBead.isActive) value += this.upperBead.value;
+    if (this.upperEnabled && this.upperBead.isActive) value += this.upperBead.value;
     this.lowerBeads.forEach((bead) => {
       if (bead.isActive) value += bead.value;
     });
     return value;
   }
 
+  getMaxValue() {
+    const upper = this.upperEnabled ? this.upperBead.value : 0;
+    return upper + this.lowerBeads.length;
+  }
+
   setValue(value) {
-    const clamped = Math.max(0, Math.min(9, Math.floor(value)));
-    const useUpper = clamped >= 5;
+    const maxValue = this.getMaxValue();
+    const clamped = Math.max(0, Math.min(maxValue, Math.floor(value)));
+    const useUpper = this.upperEnabled && clamped >= this.upperBead.value;
     this.suspendNotify = true;
     this.upperBead.setActive(useUpper);
-    let remaining = clamped - (useUpper ? 5 : 0);
-    this.lowerBeads.forEach((bead, index) => {
+    let remaining = clamped - (useUpper ? this.upperBead.value : 0);
+    this.lowerBeads.forEach((bead) => {
       const activate = remaining > 0;
       bead.setActive(activate);
       if (remaining > 0) remaining -= 1;

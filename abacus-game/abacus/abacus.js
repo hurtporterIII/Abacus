@@ -1,24 +1,57 @@
 import { Rod } from "./rod.js";
 
 export class Abacus {
-  constructor(rootEl, { rods = 1 } = {}) {
+  constructor(
+    rootEl,
+    { rods = 1, upperEnabled = true, lowerCount = 4 } = {}
+  ) {
     this.rootEl = rootEl;
     this.rods = [];
     this.changeHandlers = new Set();
     this.suspendChange = false;
+    this.config = { rods, upperEnabled, lowerCount };
 
     this.frame = document.createElement("div");
     this.frame.className = "abacus-frame";
     this.rootEl.appendChild(this.frame);
 
-    for (let i = 0; i < rods; i++) {
-      const rod = new Rod(i, { onChange: () => this.handleRodChange() });
+    this.buildRods();
+
+    requestAnimationFrame(() => this.layoutAndZero());
+    window.addEventListener("resize", () => this.layoutRods());
+  }
+
+  buildRods() {
+    this.rods.forEach((rod) => rod.el.remove());
+    this.rods = [];
+    for (let i = 0; i < this.config.rods; i++) {
+      const rod = new Rod(i, {
+        onChange: () => this.handleRodChange(),
+        upperEnabled: this.config.upperEnabled,
+        lowerCount: this.config.lowerCount
+      });
       this.rods.push(rod);
       this.rootEl.appendChild(rod.el);
     }
+  }
 
-    requestAnimationFrame(() => this.layoutRods());
-    window.addEventListener("resize", () => this.layoutRods());
+  configure({ rods, upperEnabled, lowerCount } = {}) {
+    this.suspendChange = true;
+    this.config = {
+      ...this.config,
+      rods: rods ?? this.config.rods,
+      upperEnabled: upperEnabled ?? this.config.upperEnabled,
+      lowerCount: lowerCount ?? this.config.lowerCount
+    };
+    this.buildRods();
+    requestAnimationFrame(() => this.layoutAndZero());
+    this.suspendChange = false;
+  }
+
+  layoutAndZero() {
+    this.layoutRods();
+    // Snap everything to neutral after layout so anchor math is correct.
+    this.setValue(0);
   }
 
   layoutRods() {

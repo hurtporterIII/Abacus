@@ -16,7 +16,8 @@ const overlayEl = document.getElementById("play-overlay");
 const speedSelect = document.getElementById("speed");
 const modeButtons = Array.from(document.querySelectorAll(".mode-btn"));
 
-const abacus = new Abacus(document.getElementById("abacus-root"), { rods: 1 });
+const baseAbacusConfig = { rods: 1, upperEnabled: true, lowerCount: 4 };
+const abacus = new Abacus(document.getElementById("abacus-root"), baseAbacusConfig);
 
 const ui = {
   setModeLabel: (label) => (modeLabel.textContent = label),
@@ -31,15 +32,19 @@ const ui = {
 
 function handleTrainingComplete() {
   unlockMode("practice");
-  unlockMode("challenge");
   unlockSpeedTier("slow");
   updateUIState();
 }
 
 const modes = {
-  training: createTrainingMode({ abacus, ui, onComplete: handleTrainingComplete }),
-  practice: createPracticeMode({ abacus, ui }),
-  challenge: createChallengeMode({ ui })
+  training: createTrainingMode({
+    abacus,
+    ui,
+    onLessonComplete: handleTrainingComplete,
+    baseAbacusConfig
+  }),
+  practice: createPracticeMode({ abacus, ui, baseAbacusConfig }),
+  challenge: createChallengeMode({ ui, abacus, baseAbacusConfig })
 };
 
 let activeMode = null;
@@ -69,14 +74,14 @@ function switchMode(modeName) {
   if (activeMode?.stop) activeMode.stop();
   activeMode = modes[modeName];
   activeMode?.start?.();
-  ui.setModeLabel(capitalize(modeName));
+  ui.setModeLabel(activeMode?.displayName || capitalize(modeName));
   updateUIState();
 }
 
 function startMode(modeName) {
   activeMode = modes[modeName];
   activeMode?.start?.();
-  ui.setModeLabel(capitalize(modeName));
+  ui.setModeLabel(activeMode?.displayName || capitalize(modeName));
   updateUIState();
 }
 

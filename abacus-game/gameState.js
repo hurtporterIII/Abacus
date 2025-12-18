@@ -3,13 +3,15 @@ const defaultState = {
   unlockedModes: new Set(["training"]),
   unlockedSpeedTiers: new Set(),
   currentSpeed: "slow",
-  currentLessonId: null
+  currentLessonId: null,
+  completedLessons: new Set()
 };
 
 let state = {
   ...defaultState,
   unlockedModes: new Set(defaultState.unlockedModes),
-  unlockedSpeedTiers: new Set(defaultState.unlockedSpeedTiers)
+  unlockedSpeedTiers: new Set(defaultState.unlockedSpeedTiers),
+  completedLessons: new Set(defaultState.completedLessons)
 };
 
 function persistPlaceholder() {
@@ -20,7 +22,8 @@ export function getState() {
   return {
     ...state,
     unlockedModes: new Set(state.unlockedModes),
-    unlockedSpeedTiers: new Set(state.unlockedSpeedTiers)
+    unlockedSpeedTiers: new Set(state.unlockedSpeedTiers),
+    completedLessons: new Set(state.completedLessons)
   };
 }
 
@@ -64,11 +67,22 @@ export function setLesson(id) {
   persistPlaceholder();
 }
 
+export function markLessonComplete(id) {
+  if (!id) return;
+  state.completedLessons.add(id);
+  persistPlaceholder();
+}
+
+export function isLessonComplete(id) {
+  return state.completedLessons.has(id);
+}
+
 export function resetState() {
   state = {
     ...defaultState,
     unlockedModes: new Set(defaultState.unlockedModes),
-    unlockedSpeedTiers: new Set(defaultState.unlockedSpeedTiers)
+    unlockedSpeedTiers: new Set(defaultState.unlockedSpeedTiers),
+    completedLessons: new Set(defaultState.completedLessons)
   };
   persistPlaceholder();
 }

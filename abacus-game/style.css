@@ -64,9 +64,9 @@ body {
 
 .abacus-root {
   position: relative;
-  height: 220px;
+  min-height: 320px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   gap: 20px;
 }

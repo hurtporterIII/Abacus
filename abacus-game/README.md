@@ -15,6 +15,9 @@ Vanilla HTML/CSS/JS scaffold for a soroban training game. The abacus is the sole
 - `modes/challenge.js` – stub for a future arcade/falling-number loop.
 - `assets/abacus-frame.png`, `assets/bead.png` – placeholder art files (swap with real assets later).
 
+## Included Lesson
+- Training Level 1 (Counting 1–9): single rod, upper bead disabled, nine lower beads, strict step progression. Objective prompts show `Set the abacus to: X`; advancing requires the exact value, with resets between steps via `abacus.setValue(0)`. Completing unlocks Practice mode and the slow speed tier.
+
 ## Running
 Open `index.html` in a modern browser. No build steps or servers required.
 

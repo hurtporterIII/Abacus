@@ -2,7 +2,7 @@ function randomTarget(max) {
   return Math.floor(Math.random() * Math.min(10, max + 1));
 }
 
-export function createPracticeMode({ abacus, ui }) {
+export function createPracticeMode({ abacus, ui, baseAbacusConfig }) {
   let unsubscribe = null;
   let target = 0;
 
@@ -23,7 +23,10 @@ export function createPracticeMode({ abacus, ui }) {
 
   function start() {
     console.info("[practice] start");
-    abacus.reset();
+    if (baseAbacusConfig) {
+      abacus.configure(baseAbacusConfig);
+    }
+    abacus.setValue(0);
     setNewTarget();
     unsubscribe = abacus.onChange(handleChange);
   }

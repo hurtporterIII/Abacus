@@ -1,57 +1,84 @@
-export function createTrainingMode({ abacus, ui, onComplete = () => {} }) {
-  const steps = [
-    { id: "warmup-1", label: "Set 1 on the rod", target: 1 },
-    { id: "warmup-5", label: "Set 5 using the upper bead", target: 5 },
-    { id: "warmup-9", label: "Set 9 with all lower beads + upper", target: 9 }
-  ];
+import { markLessonComplete, setLesson } from "../gameState.js";
 
+const COUNTING_LESSON = {
+  id: "training-counting-1",
+  mode: "training",
+  rods: 1,
+  upperBeadDisabled: true,
+  lowerBeads: 9,
+  sequence: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+};
+
+export function createTrainingMode({
+  abacus,
+  ui,
+  onLessonComplete = () => {},
+  baseAbacusConfig
+}) {
   let stepIndex = 0;
   let unsubscribe = null;
-  let completed = false;
 
   function updateObjective() {
-    const step = steps[stepIndex];
-    ui.setObjective(step ? step.label : "Complete");
-  }
-
-  function handleChange(value) {
-    const step = steps[stepIndex];
-    if (!step) return;
-    console.info(`[training] move logged: value=${value}, expected=${step.target}`);
-    if (value === step.target) {
-      console.info(`[training] step ${step.id} complete`);
-      stepIndex += 1;
-      if (stepIndex >= steps.length) {
-        ui.setObjective("Complete - ready for practice");
-        if (!completed) {
-          completed = true;
-          onComplete();
-        }
-        return;
-      }
-      abacus.reset();
-      updateObjective();
-    } else {
-      console.info("[training] input locked until target is reached");
+    const target = COUNTING_LESSON.sequence[stepIndex];
+    if (typeof target === "number") {
+      ui.setObjective(`Set the abacus to: ${target}`);
     }
   }
 
-  function start() {
-    console.info("[training] start");
-    stepIndex = 0;
-    completed = false;
-    abacus.reset();
+  function handleChange(value) {
+    const target = COUNTING_LESSON.sequence[stepIndex];
+    if (target === undefined) return;
+    console.info(`[training-counting] move logged: value=${value}, expected=${target}`);
+    if (value !== target) return;
+
+    console.info(`[training-counting] target ${target} correct`);
+    stepIndex += 1;
+    if (stepIndex >= COUNTING_LESSON.sequence.length) {
+      markLessonComplete(COUNTING_LESSON.id);
+      ui.setObjective("Counting complete - Practice unlocked");
+      onLessonComplete();
+      return;
+    }
+
+    abacus.setValue(0); // reset between steps using setValue only for reset
     updateObjective();
+  }
+
+  function start() {
+    console.info("[training-counting] start");
+    setLesson(COUNTING_LESSON.id);
+    stepIndex = 0;
+    abacus.configure({
+      rods: COUNTING_LESSON.rods,
+      upperEnabled: !COUNTING_LESSON.upperBeadDisabled,
+      lowerCount: COUNTING_LESSON.lowerBeads
+    });
+    abacus.setValue(0);
+    ui.setModeLabel("Training: Counting");
+    updateObjective();
+    if (unsubscribe) {
+      unsubscribe();
+    }
     unsubscribe = abacus.onChange(handleChange);
   }
 
   function stop() {
-    console.info("[training] stop");
+    console.info("[training-counting] stop");
     if (unsubscribe) {
       unsubscribe();
       unsubscribe = null;
     }
+    // Reset back to base abacus configuration for other modes.
+    if (baseAbacusConfig) {
+      abacus.configure(baseAbacusConfig);
+      abacus.setValue(0);
+    }
   }
 
-  return { name: "training", start, stop };
+  return {
+    name: "training",
+    displayName: "Training: Counting",
+    start,
+    stop
+  };
 }
