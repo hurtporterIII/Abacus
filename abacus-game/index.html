@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abacus Trainer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top-bar">
+      <div class="mode-display">
+        <span class="label">Mode:</span>
+        <span id="current-mode" class="value">Training</span>
+      </div>
+      <div class="objective-display">
+        <span class="label">Objective:</span>
+        <span id="current-objective" class="value">Intro</span>
+      </div>
+    </header>
+
+    <main class="play-area">
+      <div class="play-field" aria-label="Play field">
+        <div class="play-overlay" id="play-overlay">
+          <!-- Falling numbers or lesson prompts will render here -->
+        </div>
+        <div class="abacus-wrap">
+          <div id="abacus-root" class="abacus-root" aria-label="Abacus"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="control-bar">
+      <div class="mode-switches">
+        <button data-mode="training" id="btn-training" class="mode-btn">Training</button>
+        <button data-mode="practice" id="btn-practice" class="mode-btn" disabled>Practice</button>
+        <button data-mode="challenge" id="btn-challenge" class="mode-btn" disabled>Challenge</button>
+      </div>
+      <div class="speed-selector">
+        <label for="speed">Speed:</label>
+        <select id="speed" disabled>
+          <option value="slow">Slow</option>
+          <option value="medium">Medium</option>
+          <option value="fast">Fast</option>
+        </select>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
