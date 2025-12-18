@@ -1,33 +1,84 @@
-function randomTarget(max) {
-  return Math.floor(Math.random() * Math.min(10, max + 1));
+import { isLessonComplete } from "../gameState.js";
+import { trainingLessons } from "../lessons.js";
+
+function buildLessonName(lesson) {
+  if (!lesson) return "Lesson";
+  if (lesson.name) return lesson.name;
+  const slug = lesson.id || "lesson";
+  const label = slug.replace(/^training-/, "").replace(/-/g, " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function pickPracticeLesson() {
+  const eligible = trainingLessons.filter(
+    (lesson) =>
+      lesson.track === "education" &&
+      lesson.mode === "training" &&
+      isLessonComplete(lesson.id)
+  );
+  if (eligible.length > 0) return eligible[0];
+  return trainingLessons[0] || null;
+}
+
+function uniqueTargets(sequence = []) {
+  const numbers = sequence.filter((value) => typeof value === "number");
+  return Array.from(new Set(numbers));
+}
+
+function randomFromList(list) {
+  if (!list.length) return 0;
+  const index = Math.floor(Math.random() * list.length);
+  return list[index];
 }
 
 export function createPracticeMode({ abacus, ui, baseAbacusConfig }) {
   let unsubscribe = null;
   let target = 0;
+  let lesson = null;
+  let targets = [];
 
   function setNewTarget() {
-    target = randomTarget(9);
-    ui.setObjective(`Match: ${target}`);
-    console.info(`[practice] new target -> ${target}`);
+    target = randomFromList(targets);
+    const lessonName = buildLessonName(lesson);
+    ui.setObjective(`${lessonName} — Match: ${target}`);
+    console.info(`[practice:${lesson?.id}] new target -> ${target}`);
   }
 
   function handleChange(value) {
-    console.info(`[practice] attempt: ${value}`);
+    console.info(`[practice:${lesson?.id}] attempt: ${value}`);
     if (value === target) {
       console.info("[practice] correct - generating another");
       setNewTarget();
-      abacus.reset();
     }
   }
 
   function start() {
-    console.info("[practice] start");
-    if (baseAbacusConfig) {
-      abacus.configure(baseAbacusConfig);
+    lesson = pickPracticeLesson();
+    if (!lesson) {
+      console.warn("[practice] no lessons available; falling back to base config");
+      if (baseAbacusConfig) {
+        abacus.configure(baseAbacusConfig);
+      }
+      ui.setObjective("Practice Mode");
+      return;
     }
+
+    targets = uniqueTargets(lesson.sequence);
+    if (targets.length === 0) {
+      targets = [0];
+    }
+
+    console.info(`[practice:${lesson.id}] start`);
+    abacus.configure({
+      rods: lesson.rods,
+      upperEnabled: !lesson.upperBeadDisabled,
+      lowerCount: lesson.lowerBeads
+    });
     abacus.setValue(0);
     setNewTarget();
+    if (unsubscribe) {
+      unsubscribe();
+    }
     unsubscribe = abacus.onChange(handleChange);
   }
 
@@ -37,7 +88,11 @@ export function createPracticeMode({ abacus, ui, baseAbacusConfig }) {
       unsubscribe();
       unsubscribe = null;
     }
+    if (baseAbacusConfig) {
+      abacus.configure(baseAbacusConfig);
+      abacus.setValue(0);
+    }
   }
 
-  return { name: "practice", start, stop };
+  return { name: "practice", displayName: "Practice Mode", start, stop };
 }

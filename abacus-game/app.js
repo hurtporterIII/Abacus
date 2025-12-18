@@ -61,7 +61,11 @@ function wireControls() {
   });
   speedSelect.addEventListener("change", (event) => {
     const tier = event.target.value;
-    setSpeed(tier);
+    const success = setSpeed(tier);
+    if (!success) {
+      const current = getState().currentSpeed;
+      speedSelect.value = current || "";
+    }
   });
 }
 
@@ -93,9 +97,22 @@ function updateUIState() {
     btn.disabled = !unlocked;
     btn.classList.toggle("active", state.currentMode === modeName);
   });
-  speedSelect.disabled = state.unlockedSpeedTiers.size === 0;
-  if (state.currentSpeed) {
-    speedSelect.value = state.currentSpeed;
+  const speedOptions = Array.from(speedSelect.options);
+  const unlockedSpeedTiers = state.unlockedSpeedTiers;
+  speedOptions.forEach((opt) => {
+    opt.disabled = !unlockedSpeedTiers.has(opt.value);
+  });
+  const hasUnlockedSpeed = unlockedSpeedTiers.size > 0;
+  speedSelect.disabled = !hasUnlockedSpeed;
+  if (hasUnlockedSpeed) {
+    const nextSpeed =
+      (state.currentSpeed && unlockedSpeedTiers.has(state.currentSpeed)
+        ? state.currentSpeed
+        : Array.from(unlockedSpeedTiers)[0]) || "";
+    speedSelect.value = nextSpeed;
+    setSpeed(nextSpeed);
+  } else {
+    speedSelect.value = "";
   }
 }
 

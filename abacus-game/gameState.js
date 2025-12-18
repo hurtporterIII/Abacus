@@ -2,7 +2,7 @@ const defaultState = {
   currentMode: "training",
   unlockedModes: new Set(["training"]),
   unlockedSpeedTiers: new Set(),
-  currentSpeed: "slow",
+  currentSpeed: null,
   currentLessonId: null,
   completedLessons: new Set()
 };
@@ -54,9 +54,7 @@ export function unlockSpeedTier(tier) {
 }
 
 export function setSpeed(tier) {
-  if (!state.unlockedSpeedTiers.has(tier) && state.unlockedSpeedTiers.size > 0) {
-    return false;
-  }
+  if (!state.unlockedSpeedTiers.has(tier)) return false;
   state = { ...state, currentSpeed: tier };
   persistPlaceholder();
   return true;

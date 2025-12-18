@@ -1,13 +1,5 @@
-import { markLessonComplete, setLesson } from "../gameState.js";
-
-const COUNTING_LESSON = {
-  id: "training-counting-1",
-  mode: "training",
-  rods: 1,
-  upperBeadDisabled: true,
-  lowerBeads: 9,
-  sequence: [1, 2, 3, 4, 5, 6, 7, 8, 9]
-};
+import { isLessonComplete, markLessonComplete, setLesson } from "../gameState.js";
+import { trainingLessons } from "../lessons.js";
 
 export function createTrainingMode({
   abacus,
@@ -17,41 +9,53 @@ export function createTrainingMode({
 }) {
   let stepIndex = 0;
   let unsubscribe = null;
+  let lesson = null;
+
+  function pickLesson() {
+    const next = trainingLessons.find((entry) => !isLessonComplete(entry.id));
+    return next || trainingLessons[0];
+  }
 
   function updateObjective() {
-    const target = COUNTING_LESSON.sequence[stepIndex];
+    if (!lesson) return;
+    const target = lesson.sequence[stepIndex];
     if (typeof target === "number") {
       ui.setObjective(`Set the abacus to: ${target}`);
     }
   }
 
   function handleChange(value) {
-    const target = COUNTING_LESSON.sequence[stepIndex];
+    if (!lesson) return;
+    const target = lesson.sequence[stepIndex];
     if (target === undefined) return;
-    console.info(`[training-counting] move logged: value=${value}, expected=${target}`);
+    console.info(`[training:${lesson.id}] move logged: value=${value}, expected=${target}`);
     if (value !== target) return;
 
-    console.info(`[training-counting] target ${target} correct`);
+    console.info(`[training:${lesson.id}] target ${target} correct`);
     stepIndex += 1;
-    if (stepIndex >= COUNTING_LESSON.sequence.length) {
-      markLessonComplete(COUNTING_LESSON.id);
+    const finished = stepIndex >= lesson.sequence.length;
+    if (lesson.resetAfterStep || finished) {
+      abacus.setValue(0);
+    }
+    if (finished) {
+      markLessonComplete(lesson.id);
       ui.setObjective("Counting complete - Practice unlocked");
-      onLessonComplete();
+      onLessonComplete(lesson);
       return;
     }
 
-    abacus.setValue(0); // reset between steps using setValue only for reset
     updateObjective();
   }
 
   function start() {
-    console.info("[training-counting] start");
-    setLesson(COUNTING_LESSON.id);
+    lesson = pickLesson();
+    console.info(`[training:${lesson?.id}] start`);
+    setLesson(lesson.id);
     stepIndex = 0;
     abacus.configure({
-      rods: COUNTING_LESSON.rods,
-      upperEnabled: !COUNTING_LESSON.upperBeadDisabled,
-      lowerCount: COUNTING_LESSON.lowerBeads
+      rods: lesson.rods,
+      upperEnabled: !lesson.upperBeadDisabled,
+      lowerCount: lesson.lowerBeads
     });
     abacus.setValue(0);
     ui.setModeLabel("Training: Counting");
@@ -63,7 +67,7 @@ export function createTrainingMode({
   }
 
   function stop() {
-    console.info("[training-counting] stop");
+    console.info("[training] stop");
     if (unsubscribe) {
       unsubscribe();
       unsubscribe = null;
